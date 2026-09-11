@@ -13,6 +13,7 @@ from .views import (
 )
 
 urlpatterns = [
+    path('', health_check, name='home'),
     # System endpoints
     path('health/', health_check, name='health_check'),
     path('dummy-data/', dummy_data_overview, name='dummy_data_overview'),
