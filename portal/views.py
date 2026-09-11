@@ -2,6 +2,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
+from django.shortcuts import render
 from rest_framework.generics import (
     GenericAPIView, ListAPIView, ListCreateAPIView, RetrieveUpdateDestroyAPIView,
     RetrieveAPIView, UpdateAPIView
@@ -37,9 +38,39 @@ def generate_jwt_tokens(user_id, role, email):
 
 
 # ==========================================
+# FRONTEND TEMPLATE VIEWS
+# ==========================================
+def home(request):
+    return render(request, 'index.html')
+
+def student_login_page(request):
+    return render(request, 'student_login.html')
+
+def student_register_page(request):
+    return render(request, 'student_register.html')
+
+def student_dashboard_page(request):
+    return render(request, 'student_dashboard.html')
+
+def company_login_page(request):
+    return render(request, 'company_login.html')
+
+def company_register_page(request):
+    return render(request, 'company_register.html')
+
+def company_dashboard_page(request):
+    return render(request, 'company_dashboard.html')
+
+def internships_page(request):
+    return render(request, 'internships.html')
+
+def internship_detail_page(request, pk):
+    return render(request, 'internship_detail.html', {'pk': pk})
+
+
+# ==========================================
 # SYSTEM / HEALTH CHECKS
 # ==========================================
-
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def health_check(request):
@@ -452,8 +483,6 @@ def admin_stats(request):
         "total_internships": Internship.objects.count(),
         "total_applications": Application.objects.count(),
     }, status=status.HTTP_200_OK)
-
-
 
 
 @api_view(['PUT'])

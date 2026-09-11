@@ -1,0 +1,170 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Student Dashboard | Internship Portal{% endblock %}
+
+{% block content %}
+<div class="dashboard-wrapper">
+    <div class="container">
+        
+        <!-- Header Info Banner -->
+        <div class="dashboard-header">
+            <div class="dashboard-user-info">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 4px;">
+                    <h1 id="dash-student-name">Student Dashboard</h1>
+                    <span class="meta-tag" style="background: var(--primary-light); color: var(--primary); font-weight: 700;">Student Account</span>
+                </div>
+                <p><i class="fa-solid fa-graduation-cap"></i> <span id="dash-student-college">College</span> &bull; <i class="fa-regular fa-envelope"></i> <span id="dash-student-email">email@example.com</span></p>
+            </div>
+            
+            <div style="display: flex; gap: 10px;">
+                <a href="/internships/" class="btn btn-primary">
+                    <i class="fa-solid fa-magnifying-glass"></i> Browse Internships
+                </a>
+                <button onclick="Auth.logout()" class="btn btn-outline">
+                    <i class="fa-solid fa-right-from-bracket"></i> Logout
+                </button>
+            </div>
+        </div>
+
+        <!-- Dashboard Stat Cards -->
+        <div class="dashboard-stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon blue"><i class="fa-solid fa-paper-plane"></i></div>
+                <div>
+                    <div class="stat-number" id="dash-total-applied">0</div>
+                    <div class="stat-label">Applied Internships</div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon amber"><i class="fa-solid fa-clock-rotate-left"></i></div>
+                <div>
+                    <div class="stat-number" id="dash-pending-apps">0</div>
+                    <div class="stat-label">Pending Review</div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon emerald"><i class="fa-solid fa-circle-check"></i></div>
+                <div>
+                    <div class="stat-number" id="dash-accepted-apps">0</div>
+                    <div class="stat-label">Accepted</div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon" style="background: #fee2e2; color: #dc2626;"><i class="fa-solid fa-circle-xmark"></i></div>
+                <div>
+                    <div class="stat-number" id="dash-rejected-apps">0</div>
+                    <div class="stat-label">Rejected</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Applications Table Section -->
+        <div style="background: var(--white); border: 1px solid var(--slate-200); border-radius: var(--radius-lg); padding: 1.75rem; box-shadow: var(--shadow-sm);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <div>
+                    <h2 style="font-size: 1.35rem; font-weight: 800; color: var(--dark);">My Applications</h2>
+                    <p style="font-size: 0.9rem; color: var(--slate-500);">Track status updates from employers for your submitted applications.</p>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="custom-table">
+                    <thead>
+                        <tr>
+                            <th>Internship Position</th>
+                            <th>Company</th>
+                            <th>Applied Date</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="student-applications-tbody">
+                        <tr>
+                            <td colspan="5" style="text-align: center; padding: 2rem;">
+                                <i class="fa-solid fa-spinner fa-spin"></i> Loading applications...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+    const user = Auth.getUser();
+    const role = Auth.getRole();
+
+    if (!user || role !== 'student') {
+        showToast('Please log in as a student to access your dashboard.', 'error');
+        setTimeout(() => window.location.href = '/student/login/', 1000);
+        return;
+    }
+
+    // Fill profile header
+    document.getElementById('dash-student-name').textContent = user.name;
+    document.getElementById('dash-student-email').textContent = user.email;
+    document.getElementById('dash-student-college').textContent = user.college || 'N/A';
+
+    // 1. Fetch dashboard stats
+    const statsRes = await apiRequest(`/api/dashboard/student/?student_id=${user.id}`);
+    if (statsRes.ok) {
+        document.getElementById('dash-total-applied').textContent = statsRes.data.total_internships_applied;
+        document.getElementById('dash-pending-apps').textContent = statsRes.data.pending_applications;
+        document.getElementById('dash-accepted-apps').textContent = statsRes.data.accepted_applications;
+        document.getElementById('dash-rejected-apps').textContent = statsRes.data.rejected_applications;
+    }
+
+    // 2. Fetch applications list
+    const appsRes = await apiRequest(`/api/applications/?student_id=${user.id}`);
+    const tbody = document.getElementById('student-applications-tbody');
+
+    if (appsRes.ok) {
+        const apps = appsRes.data.results || appsRes.data || [];
+        if (apps.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="5" style="text-align: center; padding: 3rem;">
+                        <p style="color: var(--slate-500); font-weight: 600; margin-bottom: 1rem;">You have not applied for any internships yet.</p>
+                        <a href="/internships/" class="btn btn-primary btn-sm"><i class="fa-solid fa-magnifying-glass"></i> Explore Internships</a>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = apps.map(app => {
+            let statusClass = 'pending';
+            if (app.status === 'Accepted') statusClass = 'accepted';
+            if (app.status === 'Rejected') statusClass = 'rejected';
+
+            return `
+                <tr>
+                    <td><strong>${app.internship_title}</strong></td>
+                    <td><i class="fa-regular fa-building"></i> ${app.company_name}</td>
+                    <td>${new Date(app.applied_on).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</td>
+                    <td>
+                        <span class="status-badge ${statusClass}">
+                            <i class="fa-solid fa-circle" style="font-size: 0.5rem;"></i> ${app.status}
+                        </span>
+                    </td>
+                    <td>
+                        <a href="/internships/${app.internship}/" class="btn btn-outline btn-sm">View Position</a>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    } else {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color: var(--danger);">Failed to load applications.</td></tr>`;
+    }
+});
+</script>
+{% endblock %}

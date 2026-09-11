@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Company Registration | Internship Portal{% endblock %}
+
+{% block content %}
+<div class="auth-page-wrapper">
+    <div class="auth-card" style="max-width: 480px;">
+        <div class="auth-header">
+            <div style="width: 50px; height: 50px; background: #e0f2fe; color: #0284c7; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem auto; font-size: 1.5rem;">
+                <i class="fa-solid fa-building-circle-check"></i>
+            </div>
+            <h1>Register Your Company</h1>
+            <p>Post internships and recruit top student talent</p>
+        </div>
+
+        <form id="company-register-form">
+            <div class="form-group">
+                <label for="company_name">Company Name</label>
+                <input type="text" id="company_name" class="form-control" placeholder="e.g. TechNova Solutions" required>
+            </div>
+
+            <div class="form-group">
+                <label for="email">Work Email</label>
+                <input type="email" id="email" class="form-control" placeholder="hr@technova.com" required>
+            </div>
+
+            <div class="form-group">
+                <label for="location">Company Location / City</label>
+                <input type="text" id="location" class="form-control" placeholder="e.g. Ahmedabad" required>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password (min. 6 characters)</label>
+                <input type="password" id="password" class="form-control" placeholder="••••••••" minlength="6" required>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem; background: linear-gradient(135deg, #0284c7, #2563eb);" id="reg-submit-btn">
+                <i class="fa-solid fa-building-circle-check"></i> Register Company
+            </button>
+        </form>
+
+        <div class="form-footer">
+            Already registered? <a href="/company/login/">Employer Login</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('company-register-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('reg-submit-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Registering...';
+
+    const company_name = document.getElementById('company_name').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const location = document.getElementById('location').value.trim();
+    const password = document.getElementById('password').value;
+
+    const res = await apiRequest('/api/companies/register/', {
+        method: 'POST',
+        body: JSON.stringify({ company_name, email, location, password })
+    });
+
+    if (res.ok) {
+        showToast('Company registered successfully! Account is pending admin approval.', 'info');
+        Auth.setUser(res.data.company, 'company', res.data.tokens);
+        setTimeout(() => {
+            window.location.href = '/company/dashboard/';
+        }, 1000);
+    } else {
+        let msg = 'Registration failed.';
+        if (res.data.email) msg = 'Email: ' + res.data.email[0];
+        else if (res.data.password) msg = 'Password: ' + res.data.password[0];
+        else if (typeof res.data === 'object') msg = Object.values(res.data)[0];
+
+        showToast(msg, 'error');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-building-circle-check"></i> Register Company';
+    }
+});
+</script>
+{% endblock %}

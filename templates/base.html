@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Internship Portal | Find Opportunities & Hire Talent{% endblock %}</title>
+    
+    <!-- Google Fonts & FontAwesome -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Application Stylesheet -->
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+    <!-- Header Navigation Bar -->
+    <nav class="navbar">
+        <div class="container nav-container">
+            <a href="/" class="brand-logo">
+                <div class="logo-icon"><i class="fa-solid fa-briefcase"></i></div>
+                <span>InternPortal</span>
+            </a>
+
+            <div class="nav-links">
+                <a href="/" class="nav-link {% if request.path == '/' %}active{% endif %}">Home</a>
+                <a href="/internships/" class="nav-link {% if '/internships/' in request.path %}active{% endif %}">Browse Internships</a>
+            </div>
+
+            <div class="nav-buttons" id="nav-buttons">
+                <a href="/student/login/" class="btn btn-outline btn-sm">Student Login</a>
+                <a href="/company/login/" class="btn btn-primary btn-sm">Company Portal</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Page Content Block -->
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <a href="/" class="brand-logo">
+                        <div class="logo-icon"><i class="fa-solid fa-briefcase"></i></div>
+                        <span>InternPortal</span>
+                    </a>
+                    <p>Connecting ambitious students with top-tier tech companies for hands-on internship opportunities.</p>
+                </div>
+                
+                <div class="footer-col">
+                    <h4>For Students</h4>
+                    <ul>
+                        <li><a href="/internships/">Browse Internships</a></li>
+                        <li><a href="/student/register/">Create Account</a></li>
+                        <li><a href="/student/login/">Student Dashboard</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-col">
+                    <h4>For Companies</h4>
+                    <ul>
+                        <li><a href="/company/register/">Register Company</a></li>
+                        <li><a href="/company/login/">Company Portal</a></li>
+                        <li><a href="/company/login/">Post Internships</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-col">
+                    <h4>Platform</h4>
+                    <ul>
+                        <li><a href="/api/health/">API Health Check</a></li>
+                        <li><a href="/api/dummy-data/">Seed Data Overview</a></li>
+                        <li><a href="/admin/">Django Admin</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <p>&copy; 2026 Internship Portal. All rights reserved. Built with Django REST Framework.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container"></div>
+
+    <!-- Application Script -->
+    <script src="{% static 'js/app.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

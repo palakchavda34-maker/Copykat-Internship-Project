@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import (
-    health_check, dummy_data_overview,
+    health_check,student_login_page, dummy_data_overview,
     student_register, StudentLoginAPIView, StudentListCreateAPIView,
     company_register, CompanyLoginAPIView, CompanyListCreateAPIView,
     InternshipListCreateAPIView, InternshipRetrieveUpdateDestroyAPIView,
@@ -13,6 +13,8 @@ from .views import (
 )
 
 urlpatterns = [
+    path('student/login/', student_login_page, name='student_login_page'),
+    
     path('', health_check, name='home'),
     # System endpoints
     path('health/', health_check, name='health_check'),

@@ -1,0 +1,193 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Browse Internships | Internship Portal{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div style="background: linear-gradient(135deg, var(--dark) 0%, var(--slate-800) 100%); color: white; padding: 3.5rem 0;">
+    <div class="container">
+        <h1 style="font-size: 2.25rem; font-weight: 800; margin-bottom: 0.5rem;">Explore Internship Opportunities</h1>
+        <p style="color: var(--slate-400); font-size: 1.05rem;">Find the perfect tech, development, design, and analytics internship for your career goals.</p>
+    </div>
+</div>
+
+<div class="container" style="padding: 2.5rem 1.5rem 5rem 1.5rem;">
+    <!-- Search & Filter Controls Ribbon -->
+    <div style="background: var(--white); border: 1px solid var(--slate-200); border-radius: var(--radius-lg); padding: 1.5rem; box-shadow: var(--shadow-sm); margin-bottom: 2.5rem;">
+        <form id="filter-form" style="display: grid; grid-template-columns: 2fr 1.5fr 1fr 1fr auto; gap: 1rem; align-items: end;">
+            <div class="form-group" style="margin-bottom: 0;">
+                <label for="filter-search" style="font-size: 0.8rem; text-transform: uppercase; color: var(--slate-500); font-weight: 700;">Keyword / Search</label>
+                <div class="search-input-group" style="border: 1px solid var(--slate-300); border-radius: var(--radius-md); background: var(--slate-50);">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" id="filter-search" placeholder="Python, Full Stack, Django..." class="form-control" style="border:none; background:transparent; padding: 0.5rem 0.5rem 0.5rem 0;">
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+                <label for="filter-company" style="font-size: 0.8rem; text-transform: uppercase; color: var(--slate-500); font-weight: 700;">Filter Company</label>
+                <select id="filter-company" class="form-control">
+                    <option value="">All Companies</option>
+                </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+                <label for="filter-min-stipend" style="font-size: 0.8rem; text-transform: uppercase; color: var(--slate-500); font-weight: 700;">Min Stipend</label>
+                <input type="number" id="filter-min-stipend" placeholder="₹0" class="form-control" step="1000">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+                <label for="filter-max-stipend" style="font-size: 0.8rem; text-transform: uppercase; color: var(--slate-500); font-weight: 700;">Max Stipend</label>
+                <input type="number" id="filter-max-stipend" placeholder="₹50000" class="form-control" step="1000">
+            </div>
+
+            <div style="display: flex; gap: 8px;">
+                <button type="submit" class="btn btn-primary" style="height: 42px;">
+                    <i class="fa-solid fa-filter"></i> Filter
+                </button>
+                <button type="button" id="reset-filter-btn" class="btn btn-outline" style="height: 42px;" title="Reset filters">
+                    <i class="fa-solid fa-rotate-left"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Active Filter Count Ribbon -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <div style="font-size: 1.1rem; font-weight: 700; color: var(--dark);" id="results-count-text">
+            Showing all internships
+        </div>
+    </div>
+
+    <!-- Internships Cards Grid -->
+    <div class="internships-grid" id="internships-list-grid">
+        <div style="text-align: center; grid-column: 1/-1; padding: 4rem;">
+            <i class="fa-solid fa-spinner fa-spin fa-2x" style="color: var(--primary);"></i>
+            <p style="margin-top: 1rem; color: var(--slate-500);">Fetching opportunities...</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+    // Check URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const searchParam = urlParams.get('search');
+    if (searchParam) {
+        document.getElementById('filter-search').value = searchParam;
+    }
+
+    // Populate companies dropdown
+    const companiesRes = await apiRequest('/api/companies/');
+    if (companiesRes.ok) {
+        const companies = companiesRes.data.results || companiesRes.data || [];
+        const select = document.getElementById('filter-company');
+        select.innerHTML = '<option value="">All Companies</option>' + companies.map(c => 
+            `<option value="${c.id}">${c.company_name} (${c.location})</option>`
+        ).join('');
+    }
+
+    // Initial load
+    fetchInternships();
+
+    document.getElementById('filter-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        fetchInternships();
+    });
+
+    document.getElementById('reset-filter-btn').addEventListener('click', () => {
+        document.getElementById('filter-form').reset();
+        fetchInternships();
+    });
+});
+
+async function fetchInternships() {
+    const search = document.getElementById('filter-search').value.trim();
+    const companyId = document.getElementById('filter-company').value;
+    const minStipend = document.getElementById('filter-min-stipend').value;
+    const maxStipend = document.getElementById('filter-max-stipend').value;
+
+    let query = '/api/internships/?';
+    if (search) query += `search=${encodeURIComponent(search)}&`;
+    if (companyId) query += `company_id=${companyId}&`;
+    if (minStipend) query += `min_stipend=${minStipend}&`;
+    if (maxStipend) query += `max_stipend=${maxStipend}&`;
+
+    const grid = document.getElementById('internships-list-grid');
+    grid.innerHTML = `
+        <div style="text-align: center; grid-column: 1/-1; padding: 4rem;">
+            <i class="fa-solid fa-spinner fa-spin fa-2x" style="color: var(--primary);"></i>
+        </div>
+    `;
+
+    const res = await apiRequest(query);
+    if (res.ok) {
+        const list = res.data.results || res.data || [];
+        document.getElementById('results-count-text').textContent = `Found ${list.length} internship${list.length === 1 ? '' : 's'}`;
+
+        if (list.length === 0) {
+            grid.innerHTML = `
+                <div style="text-align: center; grid-column: 1/-1; padding: 4rem; background: var(--white); border-radius: var(--radius-lg); border: 1px dashed var(--slate-300);">
+                    <i class="fa-solid fa-folder-open fa-3x" style="color: var(--slate-400); margin-bottom: 1rem;"></i>
+                    <h3>No internships match your filter criteria</h3>
+                    <p style="color: var(--slate-500); margin-top: 0.5rem;">Try adjusting your search keywords or clearing filters.</p>
+                </div>
+            `;
+            return;
+        }
+
+        grid.innerHTML = list.map(item => `
+            <div class="internship-card">
+                <div>
+                    <div class="card-header-top">
+                        <div class="company-badge-icon">${(item.company_name || 'C').charAt(0)}</div>
+                        <span class="post-date">${new Date(item.created_at).toLocaleDateString()}</span>
+                    </div>
+                    <h3 class="internship-title">${item.title}</h3>
+                    <div class="company-name"><i class="fa-regular fa-building"></i> ${item.company_name || 'Company'}</div>
+                    <div class="internship-meta">
+                        <span class="meta-tag"><i class="fa-solid fa-location-dot"></i> ${item.location}</span>
+                        <span class="meta-tag stipend"><i class="fa-solid fa-indian-rupee-sign"></i> ₹${parseFloat(item.stipend).toLocaleString('en-IN')}/mo</span>
+                    </div>
+                    <p class="internship-desc">${item.description}</p>
+                </div>
+                <div class="card-footer">
+                    <a href="/internships/${item.id}/" class="btn btn-outline btn-sm">View Details</a>
+                    <button onclick="quickApply(${item.id})" class="btn btn-primary btn-sm">Apply Now <i class="fa-solid fa-paper-plane"></i></button>
+                </div>
+            </div>
+        `).join('');
+    } else {
+        grid.innerHTML = `<div style="text-align:center; grid-column: 1/-1; color: var(--danger);">Failed to load internships.</div>`;
+    }
+}
+
+async function quickApply(internshipId) {
+    const user = Auth.getUser();
+    const role = Auth.getRole();
+
+    if (!user || role !== 'student') {
+        showToast('Please log in as a student to apply for internships.', 'warning');
+        setTimeout(() => window.location.href = '/student/login/', 1200);
+        return;
+    }
+
+    const res = await apiRequest('/api/applications/', {
+        method: 'POST',
+        body: JSON.stringify({
+            student: user.id,
+            internship: internshipId
+        })
+    });
+
+    if (res.ok) {
+        showToast('Application submitted successfully!', 'success');
+    } else {
+        const errorMsg = typeof res.data === 'object' ? (res.data.non_field_errors ? res.data.non_field_errors[0] : Object.values(res.data)[0]) : 'Failed to apply.';
+        showToast(errorMsg, 'error');
+    }
+}
+</script>
+{% endblock %}

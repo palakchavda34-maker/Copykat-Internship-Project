@@ -1,0 +1,179 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Internship Details | Internship Portal{% endblock %}
+
+{% block content %}
+<div style="background: var(--white); border-bottom: 1px solid var(--slate-200); padding: 2.5rem 0;">
+    <div class="container">
+        <a href="/internships/" class="btn btn-outline btn-sm" style="margin-bottom: 1.5rem;">
+            <i class="fa-solid fa-arrow-left"></i> Back to Internships
+        </a>
+
+        <div id="detail-header-content">
+            <div style="display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 1.5rem;">
+                <div>
+                    <span class="meta-tag" style="background: var(--primary-light); color: var(--primary); font-weight: 700; margin-bottom: 0.75rem; display: inline-block;">
+                        <i class="fa-solid fa-briefcase"></i> Verified Opportunity
+                    </span>
+                    <h1 id="detail-title" style="font-size: 2.25rem; font-weight: 800; color: var(--dark); margin-bottom: 0.5rem;">Loading title...</h1>
+                    <div style="display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap; color: var(--slate-600); font-weight: 600;">
+                        <span><i class="fa-regular fa-building"></i> <strong id="detail-company" style="color: var(--dark);">Company</strong></span>
+                        <span><i class="fa-solid fa-location-dot"></i> <span id="detail-location">Location</span></span>
+                        <span><i class="fa-solid fa-calendar-day"></i> Posted <span id="detail-date">Date</span></span>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="meta-tag stipend" style="font-size: 1.1rem; padding: 8px 16px; border-radius: var(--radius-md); margin-bottom: 1rem;">
+                        <i class="fa-solid fa-indian-rupee-sign"></i> <strong id="detail-stipend">₹0</strong> / month
+                    </div>
+                    <div id="apply-action-container">
+                        <button id="apply-btn" onclick="submitApplication()" class="btn btn-primary btn-lg" style="width: 100%;">
+                            <i class="fa-solid fa-paper-plane"></i> Apply Now
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container" style="padding: 3rem 1.5rem 5rem 1.5rem;">
+    <div style="display: grid; grid-template-columns: 2.5fr 1fr; gap: 2.5rem;">
+        <!-- Left Column: Description & Responsibilities -->
+        <div style="background: var(--white); border: 1px solid var(--slate-200); border-radius: var(--radius-lg); padding: 2.5rem; box-shadow: var(--shadow-sm);">
+            <h2 style="font-size: 1.35rem; font-weight: 800; color: var(--dark); margin-bottom: 1.25rem; border-bottom: 2px solid var(--slate-100); padding-bottom: 0.75rem;">
+                Job Overview & Description
+            </h2>
+            <div id="detail-description" style="font-size: 1.05rem; line-height: 1.8; color: var(--slate-700); white-space: pre-line;">
+                Loading description...
+            </div>
+        </div>
+
+        <!-- Right Column: Summary Card -->
+        <div>
+            <div style="background: var(--white); border: 1px solid var(--slate-200); border-radius: var(--radius-lg); padding: 1.75rem; box-shadow: var(--shadow-sm); position: sticky; top: 100px;">
+                <h3 style="font-size: 1.1rem; font-weight: 800; color: var(--dark); margin-bottom: 1.25rem;">
+                    Role Summary
+                </h3>
+
+                <div style="display: flex; flex-direction: column; gap: 1rem; font-size: 0.95rem;">
+                    <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--slate-100); padding-bottom: 0.75rem;">
+                        <span style="color: var(--slate-500);">Monthly Stipend</span>
+                        <strong id="summary-stipend" style="color: var(--success);">₹0</strong>
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--slate-100); padding-bottom: 0.75rem;">
+                        <span style="color: var(--slate-500);">Location</span>
+                        <strong id="summary-location">Location</strong>
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--slate-100); padding-bottom: 0.75rem;">
+                        <span style="color: var(--slate-500);">Company</span>
+                        <strong id="summary-company">Company</strong>
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="color: var(--slate-500);">Application Status</span>
+                        <span id="summary-status" class="status-badge" style="background: var(--slate-100); color: var(--slate-600);">Not Applied</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const internshipId = "{{ pk }}";
+let currentInternship = null;
+
+document.addEventListener('DOMContentLoaded', async () => {
+    // Fetch Internship details
+    const res = await apiRequest(`/api/internships/${internshipId}/`);
+    if (res.ok) {
+        currentInternship = res.data;
+        document.getElementById('detail-title').textContent = currentInternship.title;
+        document.getElementById('detail-company').textContent = currentInternship.company_name;
+        document.getElementById('detail-location').textContent = currentInternship.location;
+        document.getElementById('detail-date').textContent = new Date(currentInternship.created_at).toLocaleDateString();
+        
+        const formattedStipend = `₹${parseFloat(currentInternship.stipend).toLocaleString('en-IN')}`;
+        document.getElementById('detail-stipend').textContent = formattedStipend;
+        document.getElementById('summary-stipend').textContent = formattedStipend + ' / mo';
+        document.getElementById('summary-location').textContent = currentInternship.location;
+        document.getElementById('summary-company').textContent = currentInternship.company_name;
+        document.getElementById('detail-description').textContent = currentInternship.description;
+
+        // Check if logged-in student has already applied
+        checkExistingApplication();
+    } else {
+        showToast('Internship not found.', 'error');
+        setTimeout(() => window.location.href = '/internships/', 1500);
+    }
+});
+
+async function checkExistingApplication() {
+    const user = Auth.getUser();
+    const role = Auth.getRole();
+
+    if (user && role === 'student') {
+        const appsRes = await apiRequest(`/api/applications/?student_id=${user.id}&internship_id=${internshipId}`);
+        if (appsRes.ok) {
+            const apps = appsRes.data.results || appsRes.data || [];
+            if (apps.length > 0) {
+                const app = apps[0];
+                let statusClass = 'pending';
+                if (app.status === 'Accepted') statusClass = 'accepted';
+                if (app.status === 'Rejected') statusClass = 'rejected';
+
+                document.getElementById('summary-status').className = `status-badge ${statusClass}`;
+                document.getElementById('summary-status').textContent = app.status;
+
+                document.getElementById('apply-action-container').innerHTML = `
+                    <div style="background: var(--slate-100); border: 1px solid var(--slate-200); padding: 0.75rem 1.25rem; border-radius: var(--radius-md); text-align: center;">
+                        <span style="font-size: 0.85rem; color: var(--slate-500); font-weight: 600;">Application Status</span>
+                        <div style="margin-top: 4px;"><span class="status-badge ${statusClass}">${app.status}</span></div>
+                    </div>
+                `;
+            }
+        }
+    }
+}
+
+async function submitApplication() {
+    const user = Auth.getUser();
+    const role = Auth.getRole();
+
+    if (!user || role !== 'student') {
+        showToast('Please log in as a student to apply.', 'warning');
+        setTimeout(() => window.location.href = '/student/login/', 1000);
+        return;
+    }
+
+    const btn = document.getElementById('apply-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Submitting...';
+
+    const res = await apiRequest('/api/applications/', {
+        method: 'POST',
+        body: JSON.stringify({
+            student: user.id,
+            internship: internshipId
+        })
+    });
+
+    if (res.ok) {
+        showToast('Application submitted successfully!', 'success');
+        checkExistingApplication();
+    } else {
+        const errorMsg = typeof res.data === 'object' ? (res.data.non_field_errors ? res.data.non_field_errors[0] : Object.values(res.data)[0]) : 'Failed to submit application.';
+        showToast(errorMsg, 'error');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Apply Now';
+    }
+}
+</script>
+{% endblock %}
